@@ -8,7 +8,7 @@
 
 ## Core challenge for Lucas
 
-Often we have to test/experiment/research on the free text data from our clients, but we have to erase all the information which could bge used to trace back to the individual.  For example, the following text
+Often we have to test/experiment/research on the free text data from our clients, but we have to erase all the information which could bge used to trace back to the individual.  For example, the following text:
 
 > Mr. James Bond has visited us at 12/12/2018 at 3:00PM for this routine doctor's appointment. Dr. Ethan Hunt has noted his left hand has some rash.
 
