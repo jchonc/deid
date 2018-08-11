@@ -46,6 +46,9 @@ From the [earlier project](nlp-react) we have a limited way to parse/tag various
 * [SpaCy](https://spacy.io/)
 * [Regular Expression](https://en.wikipedia.org/wiki/Regular_expression)
 
+## Get Going
+
+from within code, run "pip install -r requirements.txt"
 
 
 
