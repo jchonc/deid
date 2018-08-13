@@ -23,7 +23,8 @@ class DeIdentificationTest(unittest.TestCase):
 
     def test_can_load_spacy(self):
         """First to get """
-        result = self.handler.process_text("abcd")
+        result = self.handler.process_text("Lucas Zhou had a sandwich for breakfast at 8am.")
+        self.assertTrue("Lucas Zhou" not in result)
         self.assertEqual(result, "abcd")
 
 if __name__ == '__main__':
