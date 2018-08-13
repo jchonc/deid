@@ -10,4 +10,5 @@
         "*_tests.py"
     ],
     "git.ignoreLimitWarning": true,
+    "python.pythonPath": "C:\\Program Files\\Python37\\python.exe",
 }

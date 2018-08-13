@@ -25,9 +25,7 @@ class DeIdentificationTest(unittest.TestCase):
         """First to get """
         result = self.handler.process_text("Lucas Zhou had a sandwich for breakfast at 8AM.")
         self.assertEqual(result.find('Lucas Zhou'), -1)
-<<<<<<< HEAD
-=======
-
+       
     def test_can_redact_date(self):
         """A date string need to be redacted"""
         result = self.handler.process_text("Harry Potter went home on 12/11/2017.")
@@ -47,7 +45,6 @@ class DeIdentificationTest(unittest.TestCase):
         """Email information needs to be masked"""
         result = self.handler.process_text("Patient emailed  from jszxv@gmail.com this morning to cancelled the appointment.")
         self.assertEqual(result.find('jszxv@gmail.com'), -1)
->>>>>>> 943b441b041b9c8a03529b857a53e953204ba8a9
 
 if __name__ == '__main__':
     unittest.main()
