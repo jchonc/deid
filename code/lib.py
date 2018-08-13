@@ -15,13 +15,18 @@ class DeidentificationHandler:
 
     def process_text(self, input_string):
         """Mask the part of text we need to redact"""
-        doc = self.nlp(input_string)
+        inpStr = input_string
+        doc = self.nlp(inpStr)
         # doc.ents contains all the NER results - assuming it is good
         # Change person names for each ents if is person
         # Change dates
         # Using regular expression to scan long meaningless strings
+        for entity in doc.ents:
+            if entity.label_ == 'PERSON':
+                inpStr = inpStr.replace(entity.text, 'James Bond')
 
-        return input_string
+
+        return inpStr
 
 
 
