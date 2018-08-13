@@ -23,7 +23,12 @@ class DeidentificationHandler:
         # Using regular expression to scan long meaningless strings
         for entity in doc.ents:
             if entity.label_ == 'PERSON':
-                inpStr = inpStr.replace(entity.text, 'James Bond')
+                nameNew = ''
+                nameReplace = entity.text.split(" ")
+                for nameComponent in nameReplace:
+                    nameNew += len(nameComponent)*"X"+' '
+                inpStr = inpStr.replace(entity.text, nameNew.rstrip(' '))
+#            elif entity.label_ == ''
 
 
         return inpStr
