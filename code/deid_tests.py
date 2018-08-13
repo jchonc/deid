@@ -21,10 +21,33 @@ class DeIdentificationTest(unittest.TestCase):
         result = lib.de_identify_text("abcdefg")
         self.assertEqual(result, "abcdefg")
 
-    def test_can_load_spacy(self):
+    def test_can_redact_person_name(self):
         """First to get """
         result = self.handler.process_text("Lucas Zhou had a sandwich for breakfast at 8AM.")
         self.assertEqual(result.find('Lucas Zhou'), -1)
+<<<<<<< HEAD
+=======
+
+    def test_can_redact_date(self):
+        """A date string need to be redacted"""
+        result = self.handler.process_text("Harry Potter went home on 12/11/2017.")
+        self.assertEqual(result.find('12/11/2017'), -1)
+
+    def test_can_redact_time(self):
+        """Verify time information could be redacted"""
+        result = self.handler.process_text("Harry Potter went home at 12:30PM.")
+        self.assertEqual(result.find('12:30PM'), -1)
+    
+    def test_can_redact_telephone(self):
+        """Telephone information needs to be masked"""
+        result = self.handler.process_text("Patient called from (213)222-3333 this morning to cancelled the appointment.")
+        self.assertEqual(result.find('(213)222-3333'), -1)
+    
+    def test_can_redact_email(self):
+        """Email information needs to be masked"""
+        result = self.handler.process_text("Patient emailed  from jszxv@gmail.com this morning to cancelled the appointment.")
+        self.assertEqual(result.find('jszxv@gmail.com'), -1)
+>>>>>>> 943b441b041b9c8a03529b857a53e953204ba8a9
 
 if __name__ == '__main__':
     unittest.main()
