@@ -23,18 +23,18 @@ class DeIdentificationTest(unittest.TestCase):
 
     def test_can_redact_person_name(self):
         """First to get """
-        result = self.handler.process_text("Lucas Zhou had a sandwich for breakfast at 8AM.")
+        result = self.handler.process_text("Lucas Zhou had a sandwich for breakfast at 8 AM.")
         self.assertEqual(result.find('Lucas Zhou'), -1)
        
     def test_can_redact_date(self):
         """A date string need to be redacted"""
-        result = self.handler.process_text("Harry Potter went home on 12/11/2017.")
+        result = self.handler.process_text("Harry Potter went home on 12-11-2017.")
         self.assertEqual(result.find('12/11/2017'), -1)
 
     def test_can_redact_time(self):
         """Verify time information could be redacted"""
-        result = self.handler.process_text("Harry Potter went home at 12:30PM.")
-        self.assertEqual(result.find('12:30PM'), -1)
+        result = self.handler.process_text("Harry Potter went home at 12:30 PM.")
+        self.assertEqual(result.find('12:30 PM'), -1)
     
     def test_can_redact_telephone(self):
         """Telephone information needs to be masked"""

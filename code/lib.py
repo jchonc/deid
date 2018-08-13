@@ -28,7 +28,23 @@ class DeidentificationHandler:
                 for nameComponent in nameReplace:
                     nameNew += len(nameComponent)*"X"+' '
                 inpStr = inpStr.replace(entity.text, nameNew.rstrip(' '))
-#            elif entity.label_ == ''
+            elif entity.label_ == 'DATE':
+                dateNew = ''
+                dateReplace = entity.text.split("-")
+                for dateComponent in dateReplace:
+                    dateNew += len(dateComponent)*"9"+'-'
+                inpStr = inpStr.replace(entity.text, dateNew.rstrip('-'))
+            elif entity.label_ == 'TIME':
+                timeNew = ''
+                timeReplace = entity.text
+                for timeChar in timeReplace:
+                    if timeChar.isdigit():
+                        timeNew += '9'
+                    else:
+                        timeNew += timeChar
+                inpStr = inpStr.replace(entity.text, timeNew)
+
+
 
 
         return inpStr
