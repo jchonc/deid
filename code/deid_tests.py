@@ -29,7 +29,7 @@ class DeIdentificationTest(unittest.TestCase):
     def test_can_redact_date(self):
         """A date string need to be redacted"""
         result = self.handler.process_text("Harry Potter went home on 12-11-2017.")
-        self.assertEqual(result.find('12/11/2017'), -1)
+        self.assertEqual(result.find('12-11-2017'), -1)
 
     def test_can_redact_time(self):
         """Verify time information could be redacted"""
