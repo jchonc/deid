@@ -46,5 +46,16 @@ class DeIdentificationTest(unittest.TestCase):
         result = self.handler.process_text("Patient emailed from jszxv@gmail.com this morning to cancel the appointment.")
         self.assertEqual(result.find('jszxv@gmail.com'), -1)
 
+    def test_can_redact_url(self):
+        """URL information needs to be masked"""
+        result = self.handler.process_text("Patient visited http://www.abc.com/somewhere-something/a%20/a.jpg this morning to cancel the appointment.")
+        self.assertEqual(result.find('http://www.abc.com'), -1)
+
+    def test_can_redact_ip(self):
+        """IP  information needs to be masked"""
+        result = self.handler.process_text("Employee from workstation 10.5.6.210 called this morning to cancel the appointment.")
+        self.assertEqual(result.find('10.5.6.210'), -1)
+
+
 if __name__ == '__main__':
     unittest.main()
