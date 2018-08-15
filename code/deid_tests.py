@@ -52,9 +52,15 @@ class DeIdentificationTest(unittest.TestCase):
         self.assertEqual(result.find('http://www.abc.com'), -1)
 
     def test_can_redact_ip(self):
-        """IP  information needs to be masked"""
+        """IP information needs to be masked"""
         result = self.handler.process_text("Employee from workstation 10.5.6.210 called this morning to cancel the appointment.")
         self.assertEqual(result.find('10.5.6.210'), -1)
+
+    def test_can_normalize_html(self):
+        """can extra pure text from HTML mixture"""
+        input = """<div>this&nbsp;<span>is</span>&nsp;an <span>apple</span></div>"""
+        rsult = self.handler.normalize_text(input)
+        self.assertEqual(result.find("<"), -1)
 
 
 if __name__ == '__main__':

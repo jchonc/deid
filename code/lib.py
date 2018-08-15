@@ -47,6 +47,10 @@ class DeidentificationHandler:
     def __del__(self):
         self.nlp = None
 
+    def normalize_text(self, input_string):
+        """extract the text from HTML tags"""
+        return input_string
+
     def process_text(self, input_string):
         """Mask the part of text we need to redact"""
         inpStr = input_string
