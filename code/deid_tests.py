@@ -38,12 +38,12 @@ class DeIdentificationTest(unittest.TestCase):
     
     def test_can_redact_telephone(self):
         """Telephone information needs to be masked"""
-        result = self.handler.process_text("Patient called from (213)222-3333 this morning to cancelled the appointment.")
+        result = self.handler.process_text("Patient called from (213)222-3333 this morning to cancel the appointment.")
         self.assertEqual(result.find('(213)222-3333'), -1)
     
     def test_can_redact_email(self):
         """Email information needs to be masked"""
-        result = self.handler.process_text("Patient emailed  from jszxv@gmail.com this morning to cancelled the appointment.")
+        result = self.handler.process_text("Patient emailed from jszxv@gmail.com this morning to cancel the appointment.")
         self.assertEqual(result.find('jszxv@gmail.com'), -1)
 
 if __name__ == '__main__':

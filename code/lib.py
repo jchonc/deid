@@ -1,14 +1,48 @@
 """Main function library code goes here"""
+import re
 import spacy
+from spacy.matcher import Matcher
+from spacy.tokenizer import Tokenizer
+
+def modifiedTokenizer(nlp):
+    """Modify the existing Tokenizer to better tokenize phone numbers"""
+    # prefix
+    pNum_prefix = r'^[\(]'
+    all_prefixes_re = spacy.util.compile_prefix_regex(tuple(list(nlp.Defaults.prefixes) + [pNum_prefix]))
+
+    # infix
+    pNum_infixes = r'[\)-]'
+    infix_re = spacy.util.compile_infix_regex(tuple(list(nlp.Defaults.infixes) + [pNum_infixes]))
+
+    # suffix
+    suffix_re = spacy.util.compile_suffix_regex(nlp.Defaults.suffixes)  
+
+    return Tokenizer(nlp.vocab, nlp.Defaults.tokenizer_exceptions,
+                     prefix_search = all_prefixes_re.search, 
+                     infix_finditer = infix_re.finditer, suffix_search = suffix_re.search,
+                     token_match=None)
 
 class DeidentificationHandler:
     """the main process class"""
-
     def __init__(self):
         self.nlp = spacy.load("en_core_web_sm")
+        self.nlp.tokenizer = modifiedTokenizer(self.nlp)
         if 'ner' not in self.nlp.pipe_names:
             ner = self.nlp.create_pipe('ner')
             self.nlp.add_pipe(ner, last=True)
+
+        # phone number Matcher
+        self.pNumMatcher = Matcher(self.nlp.vocab)
+        pNumPattern = [{'ORTH': '(', 'OP': '?'}, {'SHAPE': 'ddd'}, 
+                       {'ORTH': ')', 'OP': '?'}, {'ORTH': '-', 'OP': '?'}, 
+                       {'SHAPE': 'ddd'}, {'ORTH': '-', 'OP': '?'}, {'SHAPE': 'dddd'}]
+        self.pNumMatcher.add('PHONE_NUMBER', None, pNumPattern)
+
+        # email Matcher
+        self.emailMatcher = Matcher(self.nlp.vocab)
+        email_flag = lambda text: bool(re.compile(r"^[^@]+@[^@]+\.[^@]+$").match(text))
+        IS_EMAIL = self.nlp.vocab.add_flag(email_flag)
+        self.emailMatcher.add('EMAIL', None, [{IS_EMAIL: True}])
 
     def __del__(self):
         self.nlp = None
@@ -41,9 +75,33 @@ class DeidentificationHandler:
                         dateNew += '9'
                     else:
                         dateNew += dateChar
-                inpStr = inpStr.replace(entity.text, dateNew)
-
-#            elif entity.label_ ==
+                inpStr = inpStr.replace(dateReplace, dateNew)
+        
+        # Replace any matching phone numbers with 9
+        pNumMatches = self.pNumMatcher(doc)
+        for match_id, start, end in pNumMatches:
+            span = doc[start:end]
+            pNumNew = ''
+            pNumReplace = span.text
+            for pNumChar in pNumReplace:
+                if pNumChar.isdigit():
+                    pNumNew += '9'
+                else:
+                    pNumNew += pNumChar
+            inpStr = inpStr.replace(pNumReplace, pNumNew)
+        
+        # Replace any matching emails with X
+        emailMatches = self.emailMatcher(doc)
+        for match_id, start, end in emailMatches:
+            span = doc[start:end]
+            emailNew = ''
+            emailReplace = span.text
+            for emailChar in emailReplace:
+                if emailChar != '@' or emailChar != '.':
+                    emailNew += 'X'
+                else:
+                    emailNew += emailChar
+            inpStr = inpStr.replace(emailReplace, emailNew)
 
 
         return inpStr
