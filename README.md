@@ -45,6 +45,7 @@ From the [earlier project](nlp-react) we have a limited way to parse/tag various
 * [TDD](https://en.wikipedia.org/wiki/Test-driven_development)
 * [SpaCy](https://spacy.io/)
 * [Regular Expression](https://en.wikipedia.org/wiki/Regular_expression)
+* [html2text](https://pypi.org/project/html2text/)
 
 ## Get Going
 

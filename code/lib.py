@@ -1,6 +1,7 @@
 """Main function library code goes here"""
 import re
 import spacy
+import html2text
 from spacy.matcher import Matcher
 from spacy.tokenizer import Tokenizer
 
@@ -29,6 +30,7 @@ def modifiedTokenizer(nlp):
                      token_match=url_re.match)
 
 def mask_text(input, sub_input, filt_expr, mask_char):
+    """Using regex to replace numbers/letters without changing format"""
     return input.replace(sub_input, re.sub(filt_expr,mask_char,sub_input))
 
 class DeidentificationHandler:
@@ -59,7 +61,7 @@ class DeidentificationHandler:
         ipv4_flag = lambda text: bool(re.compile(r"(?:25[0-5]|2[0-4]\d|1?\d{1,2}\.?){4}").match(text))
         IS_IPV4 = self.nlp.vocab.add_flag(ipv4_flag)
         self.ipMatcher.add('IPV4', None, [{IS_IPV4: True}])
-        # ipv6_flag
+        # ipv6_flag (untested)
         ipv6_flag = lambda text: bool(re.compile(r"([0-9A-F]{1,4}:?){8}").match(text))
         IS_IPV6 = self.nlp.vocab.add_flag(ipv6_flag)
         self.ipMatcher.add('IPV6', None, [{IS_IPV6: True}])
@@ -70,21 +72,22 @@ class DeidentificationHandler:
         IS_URL_ADDRESS = self.nlp.vocab.add_flag(url_flag)
         self.urlMatcher.add('URL_ADDRESS', None, [{IS_URL_ADDRESS: True}])
 
+        # HTML Parser
+        self.tag_processor = html2text.HTML2Text()
+        self.tag_processor.ignore_links = True
+
     def __del__(self):
         self.nlp = None
 
     def normalize_text(self, input_string):
         """extract the text from HTML tags"""
-        return input_string
+        return self.tag_processor.handle(input_string).rstrip()
 
     def process_text(self, input_string):
         """Mask the part of text we need to redact"""
         inpStr = input_string
         doc = self.nlp(inpStr)
-        # doc.ents contains all the NER results - assuming it is good
-        # Change person names for each ents if is person
-        # Change dates
-        # Using regular expression to scan long meaningless strings
+        # Check doc.ents for any caught entities
         for entity in doc.ents:
             # Is entity a person?
             if entity.label_ == 'PERSON':
@@ -119,7 +122,6 @@ class DeidentificationHandler:
         for match_id, start, end in urlMatches:
             span = doc[start:end]
             inpStr = inpStr.replace(span.text, '[url]')
-
 
         return inpStr
 
