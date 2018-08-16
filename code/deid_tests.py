@@ -22,7 +22,7 @@ class DeIdentificationTest(unittest.TestCase):
         self.assertEqual(result, "abcdefg")
 
     def test_can_redact_person_name(self):
-        """First to get """
+        """Mask the name of a person"""
         result = self.handler.process_text("Lucas Zhou had a sandwich for breakfast at 8 AM.")
         self.assertEqual(result.find('Lucas Zhou'), -1)
        
@@ -59,7 +59,7 @@ class DeIdentificationTest(unittest.TestCase):
     def test_can_normalize_html(self):
         """can extra pure text from HTML mixture"""
         input = """<div>this&nbsp;<span>is</span>&nsp;an <span>apple</span></div>"""
-        rsult = self.handler.normalize_text(input)
+        result = self.handler.normalize_text(input)
         self.assertEqual(result.find("<"), -1)
 
 
