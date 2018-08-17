@@ -68,9 +68,10 @@ class DeIdentificationTest(unittest.TestCase):
             "200625268", "#200625268", "B873A235C", "#B873A235C", 
             "12-0324AC", "#12-0324AC", "ACCB01-1234C", "#ACCB01-1234C"
         ]
-        input = "Dr. Smith has enered note in Johnson's chart MRN " + possible_ids[1]
-        result = self.handler.normalize_text(input)
-        self.assertEqual(result.find(possible_ids[1]), -1)
+        for case in possible_ids:
+            input = "Dr. Smith has entered note in Johnson's chart MRN " + case
+            result = self.handler.process_text(input)
+            self.assertEqual(result.find(case), -1)
 
 
 if __name__ == '__main__':

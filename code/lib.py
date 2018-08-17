@@ -58,11 +58,11 @@ class DeidentificationHandler:
         # IP Address Matcher (IPv4 and IPv6)
         self.ipMatcher = Matcher(self.nlp.vocab)
         # ipv4_flag
-        ipv4_flag = lambda text: bool(re.compile(r"(?:25[0-5]|2[0-4]\d|1?\d{1,2}\.?){4}").match(text))
+        ipv4_flag = lambda text: bool(re.compile(r"(?:25[0-5]|2[0-4]\d|1?\d{1,2}\.){4}").match(text))
         IS_IPV4 = self.nlp.vocab.add_flag(ipv4_flag)
         self.ipMatcher.add('IPV4', None, [{IS_IPV4: True}])
         # ipv6_flag (untested)
-        ipv6_flag = lambda text: bool(re.compile(r"([0-9A-F]{1,4}:?){8}").match(text))
+        ipv6_flag = lambda text: bool(re.compile(r"([0-9A-F]{1,4}:){8}").match(text))
         IS_IPV6 = self.nlp.vocab.add_flag(ipv6_flag)
         self.ipMatcher.add('IPV6', None, [{IS_IPV6: True}])
 
@@ -87,6 +87,15 @@ class DeidentificationHandler:
         """Mask the part of text we need to redact"""
         inpStr = input_string
         doc = self.nlp(inpStr)
+
+        # Replace any matching IDs with 9 and Z (done separately with regex)
+        idMatches = re.findall(r'#?(?:[A-Z0-9]-*){8,}',inpStr)
+        for match in idMatches:
+            match_replace = match
+            match_replace = re.sub(r'\d','9',match_replace)
+            match_replace = re.sub(r'[A-Z]','Z',match_replace)
+            inpStr = inpStr.replace(match,match_replace)
+
         # Check doc.ents for any caught entities
         for entity in doc.ents:
             # Is entity a person?
@@ -98,7 +107,7 @@ class DeidentificationHandler:
             elif entity.label_ == 'DATE' or entity.label_ == 'TIME':
                 # Replace all digits with 9
                 inpStr = mask_text(inpStr, entity.text, r'\d', '9')
-        
+
         # Replace any matching phone numbers with 9
         pNumMatches = self.pNumMatcher(doc)
         for match_id, start, end in pNumMatches:
