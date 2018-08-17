@@ -1,26 +1,37 @@
 """Main function library code goes here"""
 import re
 import spacy
+import html2text
 from spacy.matcher import Matcher
 from spacy.tokenizer import Tokenizer
 
 def modifiedTokenizer(nlp):
-    """Modify the existing Tokenizer to better tokenize phone numbers"""
+    """Modify the existing Tokenizer to better tokenize phone numbers and URLs"""
     # prefix
-    pNum_prefix = r'^[\(]'
-    all_prefixes_re = spacy.util.compile_prefix_regex(tuple(list(nlp.Defaults.prefixes) + [pNum_prefix]))
+    pNum_prefixes = r'^[\(]'
+    url_prefixes = r'''^[\[\("']'''
+    all_prefixes_re = spacy.util.compile_prefix_regex(tuple(list(nlp.Defaults.prefixes) + [pNum_prefixes,url_prefixes]))
 
     # infix
     pNum_infixes = r'[\)-]'
-    infix_re = spacy.util.compile_infix_regex(tuple(list(nlp.Defaults.infixes) + [pNum_infixes]))
+    url_infixes = r'''[-~]'''
+    infix_re = spacy.util.compile_infix_regex(tuple(list(nlp.Defaults.infixes) + [pNum_infixes,url_infixes]))
 
     # suffix
-    suffix_re = spacy.util.compile_suffix_regex(nlp.Defaults.suffixes)  
+    url_suffixes = r'''[\]\)"']$'''
+    suffix_re = spacy.util.compile_suffix_regex(tuple(list(nlp.Defaults.suffixes) + [url_suffixes]))  
+
+    # token match
+    url_re = re.compile(r'''^https?://''')
 
     return Tokenizer(nlp.vocab, nlp.Defaults.tokenizer_exceptions,
                      prefix_search = all_prefixes_re.search, 
                      infix_finditer = infix_re.finditer, suffix_search = suffix_re.search,
-                     token_match=None)
+                     token_match=url_re.match)
+
+def mask_text(input, sub_input, filt_expr, mask_char):
+    """Using regex to replace numbers/letters without changing format"""
+    return input.replace(sub_input, re.sub(filt_expr,mask_char,sub_input))
 
 class DeidentificationHandler:
     """the main process class"""
@@ -44,69 +55,73 @@ class DeidentificationHandler:
         IS_EMAIL = self.nlp.vocab.add_flag(email_flag)
         self.emailMatcher.add('EMAIL', None, [{IS_EMAIL: True}])
 
+        # IP Address Matcher (IPv4 and IPv6)
+        self.ipMatcher = Matcher(self.nlp.vocab)
+        # ipv4_flag
+        ipv4_flag = lambda text: bool(re.compile(r"(?:25[0-5]|2[0-4]\d|1?\d{1,2}\.?){4}").match(text))
+        IS_IPV4 = self.nlp.vocab.add_flag(ipv4_flag)
+        self.ipMatcher.add('IPV4', None, [{IS_IPV4: True}])
+        # ipv6_flag (untested)
+        ipv6_flag = lambda text: bool(re.compile(r"([0-9A-F]{1,4}:?){8}").match(text))
+        IS_IPV6 = self.nlp.vocab.add_flag(ipv6_flag)
+        self.ipMatcher.add('IPV6', None, [{IS_IPV6: True}])
+
+        # URL Matcher
+        self.urlMatcher = Matcher(self.nlp.vocab)
+        url_flag = lambda text: bool(re.compile(r"https?://(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?://(?:www\.|(?!www))[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9]\.[^\s]{2,}").match(text))
+        IS_URL_ADDRESS = self.nlp.vocab.add_flag(url_flag)
+        self.urlMatcher.add('URL_ADDRESS', None, [{IS_URL_ADDRESS: True}])
+
+        # HTML Parser
+        self.tag_processor = html2text.HTML2Text()
+        self.tag_processor.ignore_links = True
+
     def __del__(self):
         self.nlp = None
 
     def normalize_text(self, input_string):
         """extract the text from HTML tags"""
-        return input_string
+        return self.tag_processor.handle(input_string).rstrip()
 
     def process_text(self, input_string):
         """Mask the part of text we need to redact"""
         inpStr = input_string
         doc = self.nlp(inpStr)
-        # doc.ents contains all the NER results - assuming it is good
-        # Change person names for each ents if is person
-        # Change dates
-        # Using regular expression to scan long meaningless strings
+        # Check doc.ents for any caught entities
         for entity in doc.ents:
             # Is entity a person?
             if entity.label_ == 'PERSON':
                 # Replace each letter with X
-                nameNew = ''
-                nameReplace = entity.text.split(" ")
-                for nameComponent in nameReplace:
-                    nameNew += len(nameComponent)*"X"+' '
-                inpStr = inpStr.replace(entity.text, nameNew.rstrip(' '))
+                inpStr = mask_text(inpStr, entity.text, r'\w', 'X')
 
             # Is entity a date or time?
             elif entity.label_ == 'DATE' or entity.label_ == 'TIME':
                 # Replace all digits with 9
-                dateNew = ''
-                dateReplace = entity.text
-                for dateChar in dateReplace:
-                    if dateChar.isdigit():
-                        dateNew += '9'
-                    else:
-                        dateNew += dateChar
-                inpStr = inpStr.replace(dateReplace, dateNew)
+                inpStr = mask_text(inpStr, entity.text, r'\d', '9')
         
         # Replace any matching phone numbers with 9
         pNumMatches = self.pNumMatcher(doc)
         for match_id, start, end in pNumMatches:
             span = doc[start:end]
-            pNumNew = ''
-            pNumReplace = span.text
-            for pNumChar in pNumReplace:
-                if pNumChar.isdigit():
-                    pNumNew += '9'
-                else:
-                    pNumNew += pNumChar
-            inpStr = inpStr.replace(pNumReplace, pNumNew)
+            inpStr = mask_text(inpStr, span.text, r'\d', '9')
         
         # Replace any matching emails with X
         emailMatches = self.emailMatcher(doc)
         for match_id, start, end in emailMatches:
             span = doc[start:end]
-            emailNew = ''
-            emailReplace = span.text
-            for emailChar in emailReplace:
-                if emailChar != '@' or emailChar != '.':
-                    emailNew += 'X'
-                else:
-                    emailNew += emailChar
-            inpStr = inpStr.replace(emailReplace, emailNew)
+            inpStr = mask_text(inpStr, span.text, r'\w', 'X')
 
+        # Replace any matching IP addresses with 9
+        ipMatches = self.ipMatcher(doc)
+        for match_id, start, end in ipMatches:
+            span = doc[start:end]
+            inpStr = mask_text(inpStr, span.text, r'\d', '9')
+        
+        # Replace any matching URLs with [url]
+        urlMatches = self.urlMatcher(doc)
+        for match_id, start, end in urlMatches:
+            span = doc[start:end]
+            inpStr = inpStr.replace(span.text, '[url]')
 
         return inpStr
 
