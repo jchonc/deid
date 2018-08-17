@@ -59,8 +59,18 @@ class DeIdentificationTest(unittest.TestCase):
     def test_can_normalize_html(self):
         """can extra pure text from HTML mixture"""
         input = """<div>this&nbsp;<span>is</span>&nsp;an <span>apple</span></div>"""
-        rsult = self.handler.normalize_text(input)
+        result = self.handler.normalize_text(input)
         self.assertEqual(result.find("<"), -1)
+
+    def test_can_match_ids(self):
+        """some various ids"""
+        possible_ids = [
+            "200625268", "#200625268", "B873A235C", "#B873A235C", 
+            "12-0324AC", "#12-0324AC", "ACCB01-1234C", "#ACCB01-1234C"
+        ]
+        input = "Dr. Smith has enered note in Johnson's chart MRN " + possible_ids[1]
+        result = self.handler.normalize_text(input)
+        self.assertEqual(result.find(possible_ids[1]), -1)
 
 
 if __name__ == '__main__':
