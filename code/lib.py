@@ -2,6 +2,7 @@
 import re
 import spacy
 import html2text
+import datetime
 from spacy.matcher import Matcher
 from spacy.tokenizer import Tokenizer
 
@@ -32,6 +33,19 @@ def modifiedTokenizer(nlp):
 def mask_text(input, sub_input, filt_expr, mask_char):
     """Using regex to replace numbers/letters without changing format"""
     return input.replace(sub_input, re.sub(filt_expr,mask_char,sub_input))
+
+def is_date(date_string):
+    """Check if matchup is a date and not an ID/MRN"""
+    date_formats = ["%Y-%m-%d", "%d-%m-%Y", "%m-%d-%Y"]
+    for dateFormat in date_formats:
+        try:
+            validateDate = datetime.datetime.strptime(date_string, dateFormat)
+        except ValueError:
+            if date_formats.index(dateFormat) == 2:
+                return False
+            else:
+                continue
+    return True
 
 class DeidentificationHandler:
     """the main process class"""
@@ -91,10 +105,13 @@ class DeidentificationHandler:
         # Replace any matching IDs with 9 and Z (done separately with regex)
         idMatches = re.findall(r'#?(?:[A-Z0-9]-*){8,}',inpStr)
         for match in idMatches:
-            match_replace = match
-            match_replace = re.sub(r'\d','9',match_replace)
-            match_replace = re.sub(r'[A-Z]','Z',match_replace)
-            inpStr = inpStr.replace(match,match_replace)
+            if is_date(match):
+                continue
+            else:
+                match_replace = match
+                match_replace = re.sub(r'\d','9',match_replace)
+                match_replace = re.sub(r'[A-Z]','Z',match_replace)
+                inpStr = inpStr.replace(match,match_replace)
 
         # Check doc.ents for any caught entities
         for entity in doc.ents:
