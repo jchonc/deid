@@ -107,7 +107,7 @@ class DeidentificationHandler:
         for match in idMatches:
             if is_date(match):
                 continue
-            else:
+            elif bool(re.search(r'\d',match)):
                 match_replace = match
                 match_replace = re.sub(r'\d','9',match_replace)
                 match_replace = re.sub(r'[A-Z]','Z',match_replace)
